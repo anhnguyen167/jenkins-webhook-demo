@@ -41,7 +41,7 @@ pipeline {
   stages {
     stage('Print PR info') {
       when {
-        expression { return env['X-GitHub-Event'] == 'pull_request' }
+        expression { return env.x_github_event == 'pull_request' }
       }
       steps {
         echo "Pull Request: #${env.PR_NUMBER}"
@@ -54,7 +54,7 @@ pipeline {
 
     stage('Print commit info') {
       when {
-        expression { return env['X-GitHub-Event'] == 'push' }
+        expression { return env.x_github_event == 'push' }
       }
       steps {
         echo "Commit: ${env.PUSH_COMMIT_ID}"
