@@ -34,7 +34,7 @@ pipeline {
       printContributedVariables: true,
       printPostContent: false,
       regexpFilterText: '$PUSH_REF$PR_TARGET',
-      regexpFilterExpression: '^(refs/heads/main|main)$'
+      regexpFilterExpression: '^(refs/heads/main|main|refs/heads/feature/.*|feature/.*)$'
     )
   }
 
@@ -52,9 +52,20 @@ pipeline {
       }
     }
 
-    stage('Print commit info') {
+    stage('Print commit info (main)') {
       when {
-        expression { return env.x_github_event == 'push' }
+        expression { return env.x_github_event == 'push' && (env.PUSH_REF == 'refs/heads/main' || env.PUSH_REF == 'main') }
+      }
+      steps {
+        echo "Commit: ${env.PUSH_COMMIT_ID}"
+        echo "Message: ${env.PUSH_COMMIT_MSG}"
+        echo "Ref: ${env.PUSH_REF}"
+      }
+    }
+
+    stage('Print commit info (feature branch)') {
+      when {
+        expression { return env.x_github_event == 'push' && env.PUSH_REF?.startsWith('refs/heads/feature/') }
       }
       steps {
         echo "Commit: ${env.PUSH_COMMIT_ID}"
