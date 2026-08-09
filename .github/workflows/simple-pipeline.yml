@@ -1,0 +1,23 @@
+name: Simple Self-Hosted Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  hello:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Print runner info
+        run: |
+          echo "Dang chay tren self-hosted runner!"
+          echo "Hostname: $(hostname)"
+          echo "Kien truc: $(uname -m)"
+          echo "Ngay gio: $(date)"
+
+      - name: List repo files
+        run: ls -la
