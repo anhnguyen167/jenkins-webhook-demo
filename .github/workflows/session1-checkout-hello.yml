@@ -1,0 +1,23 @@
+name: Checkout Hello
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  pipeline:
+    runs-on: self-hosted
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: print checkout info
+        run: |
+          echo "Commit: ${GITHUB_SHA}"
+          echo "Branch: ${GITHUB_REF_NAME}"
+
+      - name: hello
+        run: |
+          echo "Hello World"
+          echo "Job: ${GITHUB_WORKFLOW}  Run: #${GITHUB_RUN_NUMBER}  Branch: ${GITHUB_REF_NAME}"
