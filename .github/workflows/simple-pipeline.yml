@@ -1,12 +1,10 @@
 name: Simple Self-Hosted Pipeline
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
-  hello:
+  firstsetupGit:
     runs-on: self-hosted
     steps:
       - name: Checkout

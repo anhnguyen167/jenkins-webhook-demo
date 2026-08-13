@@ -1,12 +1,10 @@
 name: Checkout Hello
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
-  pipeline:
+  pipelineSession1:
     runs-on: self-hosted
     steps:
       - name: checkout
