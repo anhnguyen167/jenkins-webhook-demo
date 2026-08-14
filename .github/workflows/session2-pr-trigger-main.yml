@@ -1,0 +1,17 @@
+name: PR Trigger Main
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  print-pr-info:
+    runs-on: self-hosted
+    steps:
+      - name: Print PR info
+        run: |
+          echo "PR Number: ${{ github.event.pull_request.number }}"
+          echo "PR Title: ${{ github.event.pull_request.title }}"
+          echo "PR Author: ${{ github.event.pull_request.user.login }}"
+          echo "Target branch: ${{ github.event.pull_request.base.ref }}"
+          echo "PR URL: ${{ github.event.pull_request.html_url }}"

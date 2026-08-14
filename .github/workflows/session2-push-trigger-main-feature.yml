@@ -1,0 +1,17 @@
+name: Push Trigger Main and Feature
+
+on:
+  push:
+    branches:
+      - main
+      - 'feature/**'
+
+jobs:
+  print-commit-info:
+    runs-on: self-hosted
+    steps:
+      - name: Print commit info
+        run: |
+          echo "Commit: ${{ github.sha }}"
+          echo "Message: ${{ github.event.head_commit.message }}"
+          echo "Branch: ${{ github.ref_name }}"
