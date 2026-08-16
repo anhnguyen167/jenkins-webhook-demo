@@ -1,4 +1,4 @@
-name: Schedule Hello World
+name: Session3 Schedule Hello World
 
 on:
   schedule:

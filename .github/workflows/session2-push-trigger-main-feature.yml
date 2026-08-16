@@ -1,4 +1,4 @@
-name: Push Trigger Main and Feature
+name: Session2 Push Trigger Main and Feature
 
 on:
   push:

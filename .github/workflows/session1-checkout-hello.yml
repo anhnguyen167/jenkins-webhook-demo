@@ -1,4 +1,4 @@
-name: Checkout Hello
+name: Session1 Checkout Hello
 
 on:
   workflow_dispatch:

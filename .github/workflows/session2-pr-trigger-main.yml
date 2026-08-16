@@ -1,4 +1,4 @@
-name: PR Trigger Main
+name: Session2 PR Trigger Main
 
 on:
   pull_request:
