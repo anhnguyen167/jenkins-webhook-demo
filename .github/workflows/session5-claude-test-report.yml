@@ -4,15 +4,15 @@ on:
   workflow_dispatch:
     inputs:
       testcase:
-        description: 'Ten test case can tap trung (de trong = xet toan bo du an)'
+        description: 'Ten test case'
         required: false
         type: string
-        default: ''
+        default: 'input test case name'
       question:
         description: 'Cau hoi muon hoi Claude'
         required: false
         type: string
-        default: 'Dua vao ket qua chay test vua roi, tong cong co bao nhieu test case da chay, bao nhieu pass, bao nhieu fail, in ra bao cao ro rang.'
+        default: 'ask me here'
 
 jobs:
   report:
