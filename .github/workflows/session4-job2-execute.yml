@@ -1,0 +1,25 @@
+name: Session4 Job2 Execute
+
+on:
+  workflow_call:
+    inputs:
+      testcase:
+        description: 'Test case name (khop voi tieu de test trong file .spec.ts)'
+        required: true
+        type: string
+
+jobs:
+  execute:
+    runs-on: self-hosted
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: install dependencies
+        run: npm install
+
+      - name: install playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: run test case
+        run: npx playwright test -g "${{ inputs.testcase }}"

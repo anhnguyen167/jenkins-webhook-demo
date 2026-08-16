@@ -19,6 +19,11 @@ RUN apt-get update && apt-get install -y \
     libffi-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# Node.js/npm de chay npm install va Playwright test (ban nodejs cua Ubuntu 22.04 qua cu)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
 # GitHub Actions runner tu choi chay bang root, nen phai tao user rieng
 RUN useradd -m runner \
     && usermod -aG sudo runner \

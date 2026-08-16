@@ -1,0 +1,25 @@
+
+# Playwright
+node_modules/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
+
+# Playwright MCP session artifacts (console logs + page snapshots).
+# Regenerated on every exploration run — noise that buries real changes.
+.playwright-mcp/
+
+# Test reports: keep the CSV results (a QA deliverable), ignore raw run data.
+/reports/*.json
+/reports/last-run.json
+
+# Secrets — never commit the Figma token
+.env
+.env.local
+
+
+# Maestro / Android run artifacts
+/reports/maestro/
+/reports/android/

@@ -1,0 +1,26 @@
+{
+  "name": "playwright",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "tokens:fetch": "node tokens/fetch-figma-tokens.mjs",
+    "test": "playwright test",
+    "test:tokens": "playwright test tests/design-tokens",
+    "doctor": "node scripts/doctor.mjs",
+    "auth": "playwright test --project=setup",
+    "android:devices": "adb devices -l",
+    "android:packages": "adb shell pm list packages | findstr /i urry",
+    "test:android": "node scripts/android-shop.mjs",
+    "maestro:test": "node scripts/maestro.mjs test .maestro/flows",
+    "maestro:studio": "node scripts/maestro.mjs studio",
+    "maestro:record": "node scripts/maestro.mjs record"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "@types/node": "^26.1.1"
+  }
+}

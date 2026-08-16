@@ -24,12 +24,4 @@ else
     --replace
 fi
 
-cleanup() {
-  if [ -n "$RUNNER_TOKEN" ]; then
-    echo "Dang go dang ky runner..."
-    ./config.sh remove --token "$RUNNER_TOKEN" || true
-  fi
-}
-trap cleanup EXIT
-
 ./run.sh

@@ -1,0 +1,15 @@
+name: Session4 Job1 Input
+
+on:
+  workflow_dispatch:
+    inputs:
+      testcase:
+        description: 'Test case name (khop voi tieu de test trong file .spec.ts)'
+        required: true
+        type: string
+
+jobs:
+  call-job2:
+    uses: ./.github/workflows/session4-job2-execute.yml
+    with:
+      testcase: ${{ inputs.testcase }}
