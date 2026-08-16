@@ -22,4 +22,8 @@ jobs:
         run: npx playwright install chromium --with-deps
 
       - name: run test case
-        run: npx playwright test -g "${{ inputs.testcase }}"
+        env:
+          TESTCASE: ${{ inputs.testcase }}
+        run: |
+          ESCAPED=$(printf '%s' "$TESTCASE" | sed -e 's/[][\.^$*+?(){}|]/\\&/g')
+          npx playwright test -g "$ESCAPED"
