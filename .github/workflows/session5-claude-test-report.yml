@@ -1,0 +1,39 @@
+name: Session5 Claude Test Report
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      testcase:
+        description: 'Ten test case can tap trung (de trong = xet toan bo du an)'
+        required: false
+        type: string
+        default: ''
+      question:
+        description: 'Cau hoi muon hoi Claude'
+        required: false
+        type: string
+        default: 'Du an nay dang co bao nhieu test case? Duyet thu muc tests/, dem so luong test case (moi loi goi test(...)) trong tung file .spec.ts, liet ke ten file kem so luong, roi in ra 1 bao cao tong hop cuoi cung gom tong so file va tong so test case.'
+
+jobs:
+  report:
+    runs-on: self-hosted
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: install claude code cli
+        run: sudo npm install -g @anthropic-ai/claude-code
+
+      - name: ask claude for test case report
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          TESTCASE: ${{ inputs.testcase }}
+          QUESTION: ${{ inputs.question }}
+        run: |
+          PROMPT="$QUESTION"
+          if [ -n "$TESTCASE" ]; then
+            PROMPT="$PROMPT Tap trung phan tich rieng test case co ten: \"$TESTCASE\"."
+          fi
+          claude -p "$PROMPT" --allowedTools "Bash(find:*)" "Bash(ls:*)" "Glob" "Grep" "Read"
