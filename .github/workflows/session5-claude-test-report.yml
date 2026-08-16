@@ -41,6 +41,13 @@ jobs:
       - name: install claude code cli
         run: sudo npm install -g @anthropic-ai/claude-code
 
+      - name: trust workspace for claude cli
+        run: |
+          mkdir -p ~/.claude
+          FILE="$HOME/.claude.json"
+          [ -f "$FILE" ] || echo '{}' > "$FILE"
+          jq --arg ws "$GITHUB_WORKSPACE" '.projects[$ws].hasTrustDialogAccepted = true' "$FILE" > "$FILE.tmp" && mv "$FILE.tmp" "$FILE"
+
       - name: ask claude for test case report
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
