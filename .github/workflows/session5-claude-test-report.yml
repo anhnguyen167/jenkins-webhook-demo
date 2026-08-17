@@ -17,6 +17,9 @@ on:
 jobs:
   report:
     runs-on: self-hosted
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -24,8 +27,13 @@ jobs:
       - name: install dependencies
         run: npm install
 
-      - name: install playwright browsers
+      - name: install playwright browsers (linux)
+        if: runner.os == 'Linux'
         run: npx playwright install chromium --with-deps
+
+      - name: install playwright browsers (non-linux)
+        if: runner.os != 'Linux'
+        run: npx playwright install chromium
 
       - name: run tests and save results
         env:
@@ -39,14 +47,36 @@ jobs:
           fi
 
       - name: install claude code cli
-        run: sudo npm install -g @anthropic-ai/claude-code
+        run: |
+          mkdir -p "$HOME/.npm-global"
+          npm config set prefix "$HOME/.npm-global"
+          npm install -g @anthropic-ai/claude-code
+
+      - name: add npm global bin to path (windows)
+        if: runner.os == 'Windows'
+        run: echo "$HOME/.npm-global" >> "$GITHUB_PATH"
+
+      - name: add npm global bin to path (non-windows)
+        if: runner.os != 'Windows'
+        run: echo "$HOME/.npm-global/bin" >> "$GITHUB_PATH"
 
       - name: trust workspace for claude cli
         run: |
-          mkdir -p ~/.claude
-          FILE="$HOME/.claude.json"
-          [ -f "$FILE" ] || echo '{}' > "$FILE"
-          jq --arg ws "$GITHUB_WORKSPACE" '.projects[$ws].hasTrustDialogAccepted = true' "$FILE" > "$FILE.tmp" && mv "$FILE.tmp" "$FILE"
+          mkdir -p "$HOME/.claude"
+          node -e "
+            const fs = require('fs');
+            const path = require('path');
+            const file = path.join(require('os').homedir(), '.claude.json');
+            let data = {};
+            if (fs.existsSync(file)) {
+              data = JSON.parse(fs.readFileSync(file, 'utf8'));
+            }
+            data.projects = data.projects || {};
+            const ws = process.env.GITHUB_WORKSPACE;
+            data.projects[ws] = data.projects[ws] || {};
+            data.projects[ws].hasTrustDialogAccepted = true;
+            fs.writeFileSync(file, JSON.stringify(data, null, 2));
+          "
 
       - name: ask claude for test case report
         env:
