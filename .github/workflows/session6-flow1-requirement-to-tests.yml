@@ -1,0 +1,105 @@
+name: Session6 Flow1 Requirement To Testcases
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'requirements/**.md'
+  workflow_dispatch:
+    inputs:
+      requirement_file:
+        description: 'Duong dan file requirement (vd: requirements/checkout.md)'
+        required: false
+        type: string
+
+jobs:
+  generate-testcase-doc:
+    runs-on: self-hosted
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: determine requirement file
+        id: req
+        run: |
+          if [ -n "${{ inputs.requirement_file }}" ]; then
+            FILE="${{ inputs.requirement_file }}"
+          else
+            FILE=$(git diff --name-only HEAD~1 HEAD -- 'requirements/*.md' | head -n1)
+          fi
+          if [ -z "$FILE" ]; then
+            echo "Khong tim thay file requirement (requirements/*.md), dung lai"
+            exit 1
+          fi
+          echo "Requirement file: $FILE"
+          echo "file=$FILE" >> "$GITHUB_OUTPUT"
+
+      - name: install claude code cli
+        run: |
+          mkdir -p "$HOME/.npm-global"
+          npm config set prefix "$HOME/.npm-global"
+          npm install -g @anthropic-ai/claude-code
+          echo "$HOME/.npm-global/bin" >> "$GITHUB_PATH"
+
+      - name: trust workspace for claude cli
+        run: |
+          mkdir -p "$HOME/.claude"
+          node -e "
+            const fs = require('fs');
+            const path = require('path');
+            const file = path.join(require('os').homedir(), '.claude.json');
+            let data = {};
+            if (fs.existsSync(file)) {
+              data = JSON.parse(fs.readFileSync(file, 'utf8'));
+            }
+            data.projects = data.projects || {};
+            const ws = process.env.GITHUB_WORKSPACE;
+            data.projects[ws] = data.projects[ws] || {};
+            data.projects[ws].hasTrustDialogAccepted = true;
+            fs.writeFileSync(file, JSON.stringify(data, null, 2));
+          "
+
+      - name: create branch for generated test case doc
+        id: branch
+        run: |
+          SLUG=$(basename "${{ steps.req.outputs.file }}" .md)
+          BRANCH="testgen/${SLUG}-${GITHUB_RUN_NUMBER}"
+          git checkout -b "$BRANCH"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "slug=$SLUG" >> "$GITHUB_OUTPUT"
+
+      - name: ask claude to generate a text test case plan
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          REQ_FILE: ${{ steps.req.outputs.file }}
+          SLUG: ${{ steps.branch.outputs.slug }}
+        run: |
+          claude -p "Doc requirement trong file $REQ_FILE. Doc them 1-2 file mau trong thu muc specs/ (neu co) de bam sat dung format hien co. Sinh MOT FILE TEST CASE DANG TEXT (khong phai code) tai specs/$SLUG.md, gom: tieu de, tom tat requirement, va muc Test Scenarios voi cau truc suite -> scenario -> dong 'File:' (duong dan spec du kien tests/$SLUG/...spec.ts, chi la ten file du dinh, CHUA tao file do) -> Steps danh so kem dong '- expect:' cho tung ky vong. Chi duoc tao/sua file specs/$SLUG.md, khong tao file .spec.ts, khong sua file nao khac trong repo." \
+            --allowedTools "Read" "Write" "Glob" "Grep" "Bash(ls:*)"
+
+      - name: commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "specs/${{ steps.branch.outputs.slug }}.md"
+          git commit -m "docs: generate text test case plan for ${{ steps.branch.outputs.slug }} (flow 1)"
+          git push origin "${{ steps.branch.outputs.branch }}"
+
+      - name: create pull request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REQ_FILE: ${{ steps.req.outputs.file }}
+          SLUG: ${{ steps.branch.outputs.slug }}
+          BRANCH: ${{ steps.branch.outputs.branch }}
+        run: |
+          BODY=$(printf 'Test case dang TEXT duoc Claude tu dong sinh tu `%s`, luu tai `specs/%s.md`.\n\nReviewer: doc va **Approve** PR nay de tu dong trigger Flow2 sinh test automation (Playwright) tu cac scenario da duyet.' "$REQ_FILE" "$SLUG")
+          gh pr create \
+            --base main \
+            --head "$BRANCH" \
+            --title "Flow1: text test case plan for $SLUG" \
+            --body "$BODY"

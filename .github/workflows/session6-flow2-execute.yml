@@ -1,0 +1,86 @@
+name: Session6 Flow2 Execute
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  generate-test-automation:
+    # Reviewer bam nut "Approve" tren PR text-test-case cua Flow1 la trigger truc tiep.
+    if: github.event.review.state == 'approved' && startsWith(github.event.pull_request.head.ref, 'testgen/')
+    runs-on: self-hosted
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: checkout approved branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: install dependencies
+        run: npm install
+
+      - name: install claude code cli
+        run: |
+          mkdir -p "$HOME/.npm-global"
+          npm config set prefix "$HOME/.npm-global"
+          npm install -g @anthropic-ai/claude-code
+          echo "$HOME/.npm-global/bin" >> "$GITHUB_PATH"
+
+      - name: trust workspace for claude cli
+        run: |
+          mkdir -p "$HOME/.claude"
+          node -e "
+            const fs = require('fs');
+            const path = require('path');
+            const file = path.join(require('os').homedir(), '.claude.json');
+            let data = {};
+            if (fs.existsSync(file)) {
+              data = JSON.parse(fs.readFileSync(file, 'utf8'));
+            }
+            data.projects = data.projects || {};
+            const ws = process.env.GITHUB_WORKSPACE;
+            data.projects[ws] = data.projects[ws] || {};
+            data.projects[ws].hasTrustDialogAccepted = true;
+            fs.writeFileSync(file, JSON.stringify(data, null, 2));
+          "
+
+      - name: create flow2 branch
+        id: branch
+        env:
+          SOURCE_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          BRANCH2="${SOURCE_BRANCH}-flow2"
+          git checkout -b "$BRANCH2"
+          echo "branch=$BRANCH2" >> "$GITHUB_OUTPUT"
+
+      - name: ask claude to generate test automation from the approved plan
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          claude -p "Trong thu muc specs/ vua co 1 file test case plan dang text moi duoc them o nhanh nay va da duoc reviewer approve tren PR. Doc file plan do (tim file specs/*.md vua duoc them, dung 'git log -1 --name-only' hoac Glob de xac dinh). Voi moi scenario va duong dan sau tu khoa 'File:' duoc ghi trong plan, sinh 1 file Playwright automation (.spec.ts) tuong ung dung tai duong dan do, hien thuc hoa cac Steps va dong '- expect:' trong plan thanh code that. Tham khao cach viet va convention (import tu @playwright/test, cach dung seed file) trong cac file tests/**/*.spec.ts da co san trong repo. Khong chay test, khong sua file trong specs/, chi tao moi cac file .spec.ts theo dung duong dan da ghi trong plan." \
+            --allowedTools "Read" "Write" "Glob" "Grep" "Bash(ls:*)" "Bash(git log:*)"
+
+      - name: commit and push
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "test: generate test automation from approved plan (flow 2, after review approval of #$PR_NUMBER)"
+          git push origin "${{ steps.branch.outputs.branch }}"
+
+      - name: create pull request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH2: ${{ steps.branch.outputs.branch }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          BODY=$(printf 'Test automation (Playwright .spec.ts) duoc Claude tu dong sinh tu text test case plan da duoc approve o PR #%s.\n\nMuon noi tiep sang Flow N: lap lai pattern approve -> tao branch/commit/PR moi.' "$PR_NUMBER")
+          gh pr create \
+            --base main \
+            --head "$BRANCH2" \
+            --title "Flow2: test automation (after #$PR_NUMBER approved)" \
+            --body "$BODY"

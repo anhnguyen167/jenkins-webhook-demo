@@ -1,0 +1,83 @@
+name: Session6 Flow3 Run Tests
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+jobs:
+  run-generated-tests:
+    # Chi chay khi PR cua Flow2 (chua test automation, nhanh ten testgen/*-flow2) duoc merge that su vao main.
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'testgen/') && endsWith(github.event.pull_request.head.ref, '-flow2')
+    runs-on: self-hosted
+    permissions:
+      pull-requests: write
+    steps:
+      - name: checkout merge commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 0
+
+      - name: determine changed spec files
+        id: files
+        env:
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        run: |
+          PARENT_SHA=$(git rev-parse "$MERGE_SHA^1")
+          FILES=$(git diff --name-only "$PARENT_SHA" "$MERGE_SHA" -- '*.spec.ts' | tr '\n' ' ')
+          if [ -z "$FILES" ]; then
+            echo "Khong tim thay file .spec.ts nao trong PR nay, dung lai"
+            exit 1
+          fi
+          echo "Se chay: $FILES"
+          echo "spec_files=$FILES" >> "$GITHUB_OUTPUT"
+
+      - name: install dependencies
+        run: npm install
+
+      - name: install playwright browsers (linux)
+        if: runner.os == 'Linux'
+        run: npx playwright install chromium --with-deps
+
+      - name: install playwright browsers (non-linux)
+        if: runner.os != 'Linux'
+        run: npx playwright install chromium
+
+      - name: run generated test cases
+        id: run
+        env:
+          SPEC_FILES: ${{ steps.files.outputs.spec_files }}
+        run: |
+          set +e
+          PLAYWRIGHT_JSON_OUTPUT_NAME=test-results-flow3.json npx playwright test $SPEC_FILES --reporter=json,line
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          set -e
+
+      - name: upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flow3-test-results-${{ github.event.pull_request.number }}
+          path: test-results-flow3.json
+          if-no-files-found: ignore
+
+      - name: comment result on merged pr
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          EXIT_CODE: ${{ steps.run.outputs.exit_code }}
+          SPEC_FILES: ${{ steps.files.outputs.spec_files }}
+        run: |
+          if [ "$EXIT_CODE" = "0" ]; then
+            STATUS="PASS"
+          else
+            STATUS="FAIL"
+          fi
+          BODY=$(printf 'Flow3: da chay test automation vua merge.\n\nFile da chay: %s\nKet qua: %s\n\nXem chi tiet trong log cua workflow run va artifact test-results-flow3.json.' "$SPEC_FILES" "$STATUS")
+          gh pr comment "$PR_NUMBER" --body "$BODY"
+
+      - name: fail job if any test failed
+        if: steps.run.outputs.exit_code != '0'
+        run: exit 1
