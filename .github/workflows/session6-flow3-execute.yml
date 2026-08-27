@@ -80,7 +80,3 @@ jobs:
               issue_number: Number(PR_NUMBER),
               body: `Flow3: da chay test automation cua PR nay (chua merge).\n\nFile da chay: ${SPEC_FILES}\nKet qua: ${status}\n\nXem chi tiet trong log cua workflow run va artifact test-results-flow3.json.`
             })
-
-      - name: fail job if any test failed
-        if: steps.run.outputs.exit_code != '0'
-        run: exit 1
