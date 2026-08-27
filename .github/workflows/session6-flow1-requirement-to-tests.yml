@@ -30,7 +30,12 @@ jobs:
           if [ -n "${{ inputs.requirement_file }}" ]; then
             FILE="${{ inputs.requirement_file }}"
           else
-            FILE=$(git diff --name-only HEAD~1 HEAD -- 'requirements/*.md' | head -n1)
+            LAST_COMMIT=$(git log -1 --format=%H -- 'requirements/*.md')
+            if [ -z "$LAST_COMMIT" ]; then
+              echo "Khong tim thay commit nao dung toi requirements/*.md, dung lai"
+              exit 1
+            fi
+            FILE=$(git diff --name-only "$LAST_COMMIT^" "$LAST_COMMIT" -- 'requirements/*.md' | head -n1)
           fi
           if [ -z "$FILE" ]; then
             echo "Khong tim thay file requirement (requirements/*.md), dung lai"
