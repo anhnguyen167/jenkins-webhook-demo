@@ -4,6 +4,12 @@ on:
   pull_request:
     types: [opened, synchronize]
     branches: [main]
+    # Loc o cap trigger (khong phai o cap job) - chi Flow2 tao file .spec.ts, Flow1 chi tao
+    # specs/*.md nen se khong bao gio khop path nay. Nho vay PR cua Flow1 se KHONG tao ra
+    # workflow run "Action required" o day nua (truoc day loc bang if: o job, nhung GitHub
+    # da tao run + doi approve TRUOC KHI kip danh gia if:, gay nham lan PR nao cung bi hoi).
+    paths:
+      - 'tests/**/*.spec.ts'
 
 jobs:
   run-generated-tests:
