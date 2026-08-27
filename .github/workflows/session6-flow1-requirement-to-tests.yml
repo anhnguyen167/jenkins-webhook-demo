@@ -19,10 +19,15 @@ jobs:
       contents: write
       pull-requests: write
     steps:
+      # GITHUB_TOKEN mac dinh khong bao gio duoc phep push nhanh co chua file trong
+      # .github/workflows/ (du noi dung khong doi) - day la gioi han cung cua GitHub,
+      # khong co scope "workflows" nao trong "permissions:" de go duoc. Phai dung PAT
+      # co scope "workflow" (secret GH_PAT) thi push nhanh moi tu main moi thanh cong.
       - name: checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GH_PAT }}
 
       - name: determine requirement file
         id: req
