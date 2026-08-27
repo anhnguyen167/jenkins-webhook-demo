@@ -78,11 +78,32 @@ jobs:
           SPEC_FILES: ${{ steps.files.outputs.spec_files }}
         with:
           script: |
+            const fs = require('fs');
             const { PR_NUMBER, EXIT_CODE, SPEC_FILES } = process.env;
             const status = EXIT_CODE === '0' ? 'PASS' : 'FAIL';
+
+            const lines = [];
+            function walk(suite) {
+              for (const spec of suite.specs || []) {
+                const last = spec.tests?.[0]?.results?.slice(-1)[0];
+                const st = last ? last.status : 'unknown';
+                const icon = st === 'passed' ? '✅' : st === 'skipped' ? '⚠️' : '❌';
+                lines.push(`${icon} ${spec.title} — ${st}`);
+              }
+              for (const child of suite.suites || []) walk(child);
+            }
+            let details = '(khong doc duoc chi tiet tung test case)';
+            try {
+              const report = JSON.parse(fs.readFileSync('test-results-flow3.json', 'utf8'));
+              for (const suite of report.suites || []) walk(suite);
+              if (lines.length > 0) details = lines.join('\n');
+            } catch (e) {
+              details = `(loi doc file ket qua: ${e.message})`;
+            }
+
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: Number(PR_NUMBER),
-              body: `Flow3: da chay test automation cua PR nay (chua merge).\n\nFile da chay: ${SPEC_FILES}\nKet qua: ${status}\n\nXem chi tiet trong log cua workflow run va artifact test-results-flow3.json.`
+              body: `Flow3: da chay test automation cua PR nay (chua merge).\n\nFile da chay: ${SPEC_FILES}\nKet qua tong: ${status}\n\n${details}\n\nXem log day du trong workflow run va artifact test-results-flow3.json.`
             })
