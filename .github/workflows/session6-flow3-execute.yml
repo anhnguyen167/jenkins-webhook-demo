@@ -64,19 +64,21 @@ jobs:
 
       - name: comment result on merged pr
         if: always()
+        uses: actions/github-script@v7
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           EXIT_CODE: ${{ steps.run.outputs.exit_code }}
           SPEC_FILES: ${{ steps.files.outputs.spec_files }}
-        run: |
-          if [ "$EXIT_CODE" = "0" ]; then
-            STATUS="PASS"
-          else
-            STATUS="FAIL"
-          fi
-          BODY=$(printf 'Flow3: da chay test automation vua merge.\n\nFile da chay: %s\nKet qua: %s\n\nXem chi tiet trong log cua workflow run va artifact test-results-flow3.json.' "$SPEC_FILES" "$STATUS")
-          gh pr comment "$PR_NUMBER" --body "$BODY"
+        with:
+          script: |
+            const { PR_NUMBER, EXIT_CODE, SPEC_FILES } = process.env;
+            const status = EXIT_CODE === '0' ? 'PASS' : 'FAIL';
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: Number(PR_NUMBER),
+              body: `Flow3: da chay test automation vua merge.\n\nFile da chay: ${SPEC_FILES}\nKet qua: ${status}\n\nXem chi tiet trong log cua workflow run va artifact test-results-flow3.json.`
+            })
 
       - name: fail job if any test failed
         if: steps.run.outputs.exit_code != '0'

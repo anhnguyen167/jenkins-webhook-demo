@@ -73,14 +73,18 @@ jobs:
           git push origin "${{ steps.branch.outputs.branch }}"
 
       - name: create pull request
+        uses: actions/github-script@v7
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH2: ${{ steps.branch.outputs.branch }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: |
-          BODY=$(printf 'Test automation (Playwright .spec.ts) duoc Claude tu dong sinh tu text test case plan da duoc approve o PR #%s.\n\nMuon noi tiep sang Flow N: lap lai pattern approve -> tao branch/commit/PR moi.' "$PR_NUMBER")
-          gh pr create \
-            --base main \
-            --head "$BRANCH2" \
-            --title "Flow2: test automation (after #$PR_NUMBER approved)" \
-            --body "$BODY"
+        with:
+          script: |
+            const { BRANCH2, PR_NUMBER } = process.env;
+            await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              base: 'main',
+              head: BRANCH2,
+              title: `Flow2: test automation (after #${PR_NUMBER} approved)`,
+              body: `Test automation (Playwright .spec.ts) duoc Claude tu dong sinh tu text test case plan da duoc approve o PR #${PR_NUMBER}.\n\nMuon noi tiep sang Flow N: lap lai pattern approve -> tao branch/commit/PR moi.`
+            })

@@ -91,15 +91,19 @@ jobs:
           git push origin "${{ steps.branch.outputs.branch }}"
 
       - name: create pull request
+        uses: actions/github-script@v7
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REQ_FILE: ${{ steps.req.outputs.file }}
           SLUG: ${{ steps.branch.outputs.slug }}
           BRANCH: ${{ steps.branch.outputs.branch }}
-        run: |
-          BODY=$(printf 'Test case dang TEXT duoc Claude tu dong sinh tu `%s`, luu tai `specs/%s.md`.\n\nReviewer: doc va **Approve** PR nay de tu dong trigger Flow2 sinh test automation (Playwright) tu cac scenario da duyet.' "$REQ_FILE" "$SLUG")
-          gh pr create \
-            --base main \
-            --head "$BRANCH" \
-            --title "Flow1: text test case plan for $SLUG" \
-            --body "$BODY"
+        with:
+          script: |
+            const { REQ_FILE, SLUG, BRANCH } = process.env;
+            await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              base: 'main',
+              head: BRANCH,
+              title: `Flow1: text test case plan for ${SLUG}`,
+              body: `Test case dang TEXT duoc Claude tu dong sinh tu \`${REQ_FILE}\`, luu tai \`specs/${SLUG}.md\`.\n\nReviewer: doc va **Approve** PR nay de tu dong trigger Flow2 sinh test automation (Playwright) tu cac scenario da duyet.`
+            })
