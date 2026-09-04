@@ -120,7 +120,8 @@ jobs:
             echo "Chua cau hinh secret TEAMS_WEBHOOK_URL, bo qua thong bao"
             exit 0
           fi
+          BODY=$(printf '{"type":"message","attachments":[{"contentType":"application/vnd.microsoft.card.adaptive","content":{"$schema":"http://adaptivecards.io/schemas/adaptive-card.json","type":"AdaptiveCard","version":"1.4","body":[{"type":"TextBlock","text":"Session6 Flow3 - %s","weight":"Bolder","size":"Medium","wrap":true},{"type":"TextBlock","text":"Da chay test automation cua PR #%s.","wrap":true},{"type":"TextBlock","text":"%s","wrap":true}]}}]}' \
+            "$TEST_STATUS" "$PR_NUMBER" "$RUN_URL")
           curl -sf -X POST "$TEAMS_WEBHOOK_URL" \
             -H "Content-Type: application/json" \
-            -d "$(printf '{"text": "**Session6 Flow3** - %s\\n\\nDa chay test automation cua PR #%s.\\nXem chi tiet: %s"}' \
-              "$TEST_STATUS" "$PR_NUMBER" "$RUN_URL")"
+            -d "$BODY"
