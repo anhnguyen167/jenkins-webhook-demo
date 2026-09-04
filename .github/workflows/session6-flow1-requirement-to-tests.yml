@@ -101,6 +101,7 @@ jobs:
           git push origin "${{ steps.branch.outputs.branch }}"
 
       - name: create pull request
+        id: create_pr
         uses: actions/github-script@v7
         env:
           REQ_FILE: ${{ steps.req.outputs.file }}
@@ -109,7 +110,7 @@ jobs:
         with:
           script: |
             const { REQ_FILE, SLUG, BRANCH } = process.env;
-            await github.rest.pulls.create({
+            const pr = await github.rest.pulls.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
               base: 'main',
@@ -117,6 +118,7 @@ jobs:
               title: `Flow1: text test case plan for ${SLUG}`,
               body: `Test case dang TEXT duoc Claude tu dong sinh tu \`${REQ_FILE}\`, luu tai \`specs/${SLUG}.md\`.\n\nReviewer: doc va **Approve** PR nay de tu dong trigger Flow2 sinh test automation (Playwright) tu cac scenario da duyet.`
             })
+            core.setOutput('pr_url', pr.data.html_url)
 
       - name: notify microsoft teams
         if: always()
@@ -125,13 +127,18 @@ jobs:
           STATUS: ${{ job.status }}
           SLUG: ${{ steps.branch.outputs.slug }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          PR_URL: ${{ steps.create_pr.outputs.pr_url }}
         run: |
           if [ -z "$TEAMS_WEBHOOK_URL" ]; then
             echo "Chua cau hinh secret TEAMS_WEBHOOK_URL, bo qua thong bao"
             exit 0
           fi
-          BODY=$(printf '{"type":"message","attachments":[{"contentType":"application/vnd.microsoft.card.adaptive","content":{"$schema":"http://adaptivecards.io/schemas/adaptive-card.json","type":"AdaptiveCard","version":"1.4","body":[{"type":"TextBlock","text":"Session6 Flow1 - %s","weight":"Bolder","size":"Medium","wrap":true},{"type":"TextBlock","text":"Test case plan cho: %s","wrap":true},{"type":"TextBlock","text":"%s","wrap":true}]}}]}' \
-            "$STATUS" "$SLUG" "$RUN_URL")
+          ACTIONS=$(printf '{"type":"Action.OpenUrl","title":"View Run","url":"%s"}' "$RUN_URL")
+          if [ -n "$PR_URL" ]; then
+            ACTIONS="$(printf '{"type":"Action.OpenUrl","title":"View PR","url":"%s"}' "$PR_URL"),$ACTIONS"
+          fi
+          BODY=$(printf '{"type":"message","attachments":[{"contentType":"application/vnd.microsoft.card.adaptive","content":{"$schema":"http://adaptivecards.io/schemas/adaptive-card.json","type":"AdaptiveCard","version":"1.4","body":[{"type":"TextBlock","text":"Session6 Flow1 - %s","weight":"Bolder","size":"Medium","wrap":true},{"type":"TextBlock","text":"Test case plan cho: %s","wrap":true}],"actions":[%s]}}]}' \
+            "$STATUS" "$SLUG" "$ACTIONS")
           curl -sf -X POST "$TEAMS_WEBHOOK_URL" \
             -H "Content-Type: application/json" \
             -d "$BODY"
