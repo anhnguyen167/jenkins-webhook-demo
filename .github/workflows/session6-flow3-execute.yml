@@ -107,3 +107,20 @@ jobs:
               issue_number: Number(PR_NUMBER),
               body: `Flow3: da chay test automation cua PR nay (chua merge).\n\nFile da chay: ${SPEC_FILES}\nKet qua tong: ${status}\n\n${details}\n\nXem log day du trong workflow run va artifact test-results-flow3.json.`
             })
+
+      - name: notify microsoft teams
+        if: always()
+        env:
+          TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+          TEST_STATUS: ${{ steps.run.outputs.exit_code == '0' && 'PASS' || 'FAIL' }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$TEAMS_WEBHOOK_URL" ]; then
+            echo "Chua cau hinh secret TEAMS_WEBHOOK_URL, bo qua thong bao"
+            exit 0
+          fi
+          curl -sf -X POST "$TEAMS_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "$(printf '{"text": "**Session6 Flow3** - %s\\n\\nDa chay test automation cua PR #%s.\\nXem chi tiet: %s"}' \
+              "$TEST_STATUS" "$PR_NUMBER" "$RUN_URL")"

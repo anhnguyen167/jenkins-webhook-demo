@@ -91,3 +91,20 @@ jobs:
               title: `Flow2: test automation (after #${PR_NUMBER} approved)`,
               body: `Test automation (Playwright .spec.ts) duoc Claude tu dong sinh tu text test case plan da duoc approve o PR #${PR_NUMBER}.\n\nMuon noi tiep sang Flow N: lap lai pattern approve -> tao branch/commit/PR moi.`
             })
+
+      - name: notify microsoft teams
+        if: always()
+        env:
+          TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+          STATUS: ${{ job.status }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$TEAMS_WEBHOOK_URL" ]; then
+            echo "Chua cau hinh secret TEAMS_WEBHOOK_URL, bo qua thong bao"
+            exit 0
+          fi
+          curl -sf -X POST "$TEAMS_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "$(printf '{"text": "**Session6 Flow2** - %s\\n\\nSinh test automation sau khi PR #%s duoc approve.\\nXem run: %s"}' \
+              "$STATUS" "$PR_NUMBER" "$RUN_URL")"

@@ -117,3 +117,20 @@ jobs:
               title: `Flow1: text test case plan for ${SLUG}`,
               body: `Test case dang TEXT duoc Claude tu dong sinh tu \`${REQ_FILE}\`, luu tai \`specs/${SLUG}.md\`.\n\nReviewer: doc va **Approve** PR nay de tu dong trigger Flow2 sinh test automation (Playwright) tu cac scenario da duyet.`
             })
+
+      - name: notify microsoft teams
+        if: always()
+        env:
+          TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+          STATUS: ${{ job.status }}
+          SLUG: ${{ steps.branch.outputs.slug }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$TEAMS_WEBHOOK_URL" ]; then
+            echo "Chua cau hinh secret TEAMS_WEBHOOK_URL, bo qua thong bao"
+            exit 0
+          fi
+          curl -sf -X POST "$TEAMS_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "$(printf '{"text": "**Session6 Flow1** - %s\\n\\nTest case plan cho: %s\\nXem run: %s"}' \
+              "$STATUS" "$SLUG" "$RUN_URL")"
