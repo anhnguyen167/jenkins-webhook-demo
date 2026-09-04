@@ -6,7 +6,7 @@
 - Project: URRY Admin
 - Priority: Medium — Project size: Small — Where: Admin
 - Status: Passed on Dev, waiting to be built on staging (per latest comment: "test pass on dev, please build staging")
-- Update 2026-09-04: re-triggering the requirement-to-testcase pipeline (Flow1 → Flow2 → Flow3) end-to-end after fixing the Teams notification webhook; no change to the actual bug/requirement below.
+- Doc added to the requirement-to-testcase pipeline (`requirements/`) on 2026-09-04 to auto-generate a text test case plan (Flow1) and Playwright automation (Flow2/Flow3) for this bug.
 
 ## Application
 
